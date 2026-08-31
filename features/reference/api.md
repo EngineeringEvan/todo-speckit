@@ -1,6 +1,6 @@
 # API Reference
 
-**Status:** Updated for Feature 1 (User Authentication & Session Management).
+**Status:** Updated for Feature 2 (Todo List Management).
 
 API mount path is `/todo` (see `backend/server.js`).
 
@@ -68,18 +68,31 @@ API mount path is `/todo` (see `backend/server.js`).
   }
   ```
 
-### Lists (auth foundation)
-
-Feature 1 ships a read-only lists endpoint so session scoping can be proven (`US-1.3`). Create/update/delete belong to Feature 2.
+### Lists
 
 | Method | Endpoint | Auth | Purpose | Success Status |
 |--------|----------|------|---------|----------------|
-| `GET` | `/todo/lists` | Bearer Token | Return lists owned by the authenticated user | `200 OK` |
+| `GET` | `/todo/lists` | Bearer Token | Return lists owned by the authenticated user, ordered by name | `200 OK` |
+| `POST` | `/todo/lists` | Bearer Token | Create a list owned by the authenticated user | `201 Created` |
+| `PUT` | `/todo/lists/:listId` | Bearer Token | Rename an owned list | `200 OK` |
+| `DELETE` | `/todo/lists/:listId` | Bearer Token | Delete an owned list | `200 OK` |
 
-#### `GET /todo/lists`
-- **Headers:** `Authorization: Bearer <token>`
-- **Response `200 OK`:** array of list objects (`id`, `name`, `userId`, timestamps). Empty array if the user has no lists.
-- **Errors:** `401` when the token is missing, invalid, or expired.
+**List object:**
+```json
+{
+  "id": 1,
+  "name": "Groceries",
+  "userId": 42,
+  "createdAt": "2026-07-02T12:00:00.000Z",
+  "updatedAt": "2026-07-02T12:00:00.000Z"
+}
+```
+
+- **Create body:** `{ "name": "Groceries" }`. Client `userId` is ignored; ownership is `req.user.id`.
+- **Rename body:** `{ "name": "Shopping" }`.
+- **Validation:** trimmed name required; max 100 characters (`"List name must be 100 characters or fewer."`).
+- **Not owned / missing:** `404` `{ "message": "List with id=<id> not found." }`
+- **Unauthenticated:** `401`
 
 ## Conventions
 

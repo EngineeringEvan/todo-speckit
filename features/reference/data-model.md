@@ -1,6 +1,6 @@
 # Data Model Reference
 
-**Status:** Updated for Feature 1 (User Authentication & Session Management).
+**Status:** Updated for Feature 2 (Todo List Management).
 
 ## Tables
 
@@ -32,13 +32,13 @@ Represents server-side session tracking and token validation.
 
 ### `lists`
 
-Minimal list rows so Feature 1 can prove session-scoped `GET /todo/lists`. Full list management is Feature 2.
+Named todo lists owned by a single user.
 
 | Column | Type | Nullable | Default | Description / Constraints |
 |--------|------|----------|---------|---------------------------|
 | `id` | INTEGER | No | Auto-increment | Primary Key |
-| `name` | STRING(100) | No | — | List name |
-| `userId` | INTEGER | No | — | Foreign Key referencing `users.id` |
+| `name` | STRING(100) | No | — | List name; trimmed; max 100 characters |
+| `userId` | INTEGER | No | — | Foreign Key referencing `users.id`; set from `req.user.id` on create |
 | `createdAt` | DATE | No | Sequelize | Timestamp |
 | `updatedAt` | DATE | No | Sequelize | Timestamp |
 

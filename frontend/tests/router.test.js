@@ -37,5 +37,15 @@ describe("Feature 1 — User Authentication & Session Management", () => {
 
       expect(router.currentRoute.value.name).toBe("login");
     });
+
+    it("Unauthenticated user accesses the dashboard", async () => {
+      Utils.removeItem("user");
+
+      await router.push("/login");
+      await router.push("/");
+      await router.isReady();
+
+      expect(router.currentRoute.value.name).toBe("login");
+    });
   });
 });

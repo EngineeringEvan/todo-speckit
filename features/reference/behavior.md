@@ -18,7 +18,7 @@
 |---------|------|-----------------|------------|-------------|
 | `SESS-001` | Session Storage & TTL | Sessions tracked in `sessions` table with JWT token; 24-hour expiration (`SESSION_TTL_MS = 86400000`). | `FR-004`, `FR-005` | `backend/app/controllers/auth.controller.js` |
 | `SESS-002` | Session Reuse | Login reuses an active, non-expired session token if one exists for the user. | `FR-006` | `backend/app/controllers/auth.controller.js` |
-| `SESS-003` | Session Invalidation | Sign out clears session token on server and removes `user` from client `localStorage`. | `US-1.4` | `backend/app/controllers/auth.controller.js`, `frontend/src/views/Home.vue` |
+| `SESS-003` | Session Invalidation | Sign out clears session token on server and removes `user` from client `localStorage`. | `US-1.4` | `backend/app/controllers/auth.controller.js`, `frontend/src/components/MenuBar.vue` |
 | `SESS-004` | Unauthorized Handling | Missing, invalid, or expired tokens receive `401 Unauthorized`; client clears stored session and redirects to login. | `US-1.3`, `US-1.5` | `backend/app/authorization/authorization.js`, `frontend/src/services/services.js` |
 
 ## 3. Validation & Registration Rules
@@ -32,11 +32,14 @@
 | `VAL-005` | Duplicate Username | Duplicate username returns `400` with `"Username is already taken."`. | `US-1.1` | `backend/app/controllers/auth.controller.js` |
 | `VAL-006` | Duplicate Email | Duplicate email returns `400` with `"Email is already registered."`. | `US-1.1` | `backend/app/controllers/auth.controller.js` |
 
-## 4. Data isolation (foundation)
+## 4. Data isolation
 
 | Rule ID | Name | Rule / Behavior | Provenance | Enforcement |
 |---------|------|-----------------|------------|-------------|
-| `OWN-001` | List query scope | `GET /todo/lists` filters by `userId: req.user.id`. Another user's lists are never returned. | `FR-008`, `US-1.3` | `backend/app/controllers/list.controller.js` |
+| `OWN-001` | List query scope | List reads/writes filter by `userId: req.user.id`. Cross-user access returns `404`. | Feature 2 `FR-003`, `US-2.5` | `backend/app/authorization/authorization.js`, `backend/app/controllers/list.controller.js` |
+| `OWN-002` | List create ownership | New lists set `userId` from `req.user.id` only; body `userId` is ignored. | Feature 2 `FR-004` | `backend/app/controllers/list.controller.js` |
+| `LIST-001` | List name rules | Names are trimmed; empty rejected; max 100 characters. | Feature 2 `FR-005` | `backend/app/controllers/list.controller.js`, `frontend/src/views/Dashboard.vue` |
+| `LIST-002` | List sort | `GET /todo/lists` returns lists ordered by name ascending. | Feature 2 `FR-006` | `backend/app/controllers/list.controller.js` |
 
 ## 5. UI & Routing Rules
 
@@ -44,4 +47,6 @@
 |---------|------|-----------------|------------|-------------|
 | `UI-001` | Auth Layout | Login and Register pages use full-screen layout without `MenuBar`. | Screen Reqs | `frontend/src/App.vue`, `frontend/src/views/Login.vue`, `frontend/src/views/Register.vue` |
 | `UI-002` | Route Guards | Unauthenticated users accessing non-auth routes redirect to `/login`; authenticated users accessing `/login` or `/register` redirect to `/`. | `US-1.3`, `US-1.5` | `frontend/src/router.js` |
-| `UI-003` | Error Alerts | Form errors from backend or failed authentication are rendered in `<v-alert type="error">`. | Screen Reqs | `frontend/src/views/Login.vue`, `frontend/src/views/Register.vue` |
+| `UI-003` | Error Alerts | Form and API errors are rendered in `<v-alert type="error">`. | Screen Reqs | `frontend/src/views/Login.vue`, `frontend/src/views/Register.vue`, `frontend/src/views/Dashboard.vue` |
+| `UI-004` | MenuBar | Signed-in chrome shows the user's name and **Sign out**; hidden on login and register. | Feature 2 Screen Reqs | `frontend/src/App.vue`, `frontend/src/components/MenuBar.vue` |
+| `UI-005` | Lists empty state | Zero lists shows **"No lists yet. Create your first list."** | Feature 2 `US-2.2` | `frontend/src/views/Dashboard.vue` |
