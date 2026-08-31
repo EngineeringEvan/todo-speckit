@@ -1,6 +1,6 @@
 # API Reference
 
-**Status:** Updated for Feature 3 (Todo List Item Management).
+**Status:** Updated for Feature 4 (User Profile Management).
 
 API mount path is `/todo` (see `backend/server.js`).
 
@@ -120,6 +120,19 @@ API mount path is `/todo` (see `backend/server.js`).
 - **New todos** default to `completed: false`. Title is trimmed; empty rejected (`"Todo title is required."`); max 255 characters.
 - Parent list or todo not owned: `404` (`List with id=<id> not found.` / `Todo with id=<id> not found.`).
 - Deleting a list cascades to its todos.
+
+### Users
+
+| Method | Endpoint | Auth | Purpose | Success Status |
+|--------|----------|------|---------|----------------|
+| `GET` | `/todo/users/:id` | Bearer Token | Fetch the authenticated user's profile | `200 OK` |
+| `PUT` | `/todo/users/:id` | Bearer Token | Update the authenticated user's profile | `200 OK` |
+
+**Profile object:** `id`, `fName`, `lName`, `email`, `username`, `role`, timestamps. Never includes `password`.
+
+- Self-access only (`:id` must equal `req.user.id`); otherwise `404` `{ "message": "User with id=<id> not found." }`.
+- `password` is optional on update; when provided it must be at least 8 characters and is bcrypt-hashed.
+- Duplicate username/email return `400` with the same messages as registration.
 
 ## Conventions
 
