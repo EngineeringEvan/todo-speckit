@@ -43,6 +43,7 @@
 | `OWN-003` | Todo scope | Todo reads/writes require owned parent list and `userId: req.user.id`. Cross-user access returns `404`. | Feature 3 `FR-003` | `backend/app/authorization/authorization.js`, `backend/app/controllers/todo.controller.js` |
 | `TODO-001` | Todo defaults and sort | New todos are incomplete; lists return incomplete first, then `createdAt` ascending. | Feature 3 `FR-007`, `FR-009` | `backend/app/controllers/todo.controller.js` |
 | `TODO-002` | List cascade | Deleting a list deletes its todos. | Feature 3 `FR-008` | `backend/app/models/index.js` |
+| `TODO-003` | Due dates | Optional `dueDate` is calendar-only; invalid strings return `400`; `null` on PUT clears; omit leaves unchanged. Incomplete past-due todos use overdue styling in the UI. | Feature 5 | `backend/app/utils/dueDate.js`, `backend/app/controllers/todo.controller.js`, `frontend/src/views/Dashboard.vue` |
 | `OWN-004` | Profile self-access | Users may GET/PUT only their own profile; other ids return `404`. | Feature 4 `FR-002` | `backend/app/authorization/authorization.js`, `backend/app/controllers/user.controller.js` |
 
 ## 5. UI & Routing Rules

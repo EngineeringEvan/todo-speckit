@@ -1,6 +1,6 @@
 # API Reference
 
-**Status:** Updated for Feature 4 (User Profile Management).
+**Status:** Updated for Feature 5 (Todo Due Date).
 
 API mount path is `/todo` (see `backend/server.js`).
 
@@ -100,7 +100,7 @@ API mount path is `/todo` (see `backend/server.js`).
 |--------|----------|------|---------|----------------|
 | `GET` | `/todo/lists/:listId/todos` | Bearer Token | Fetch todos in an owned list (incomplete first, then `createdAt` ascending) | `200 OK` |
 | `POST` | `/todo/lists/:listId/todos` | Bearer Token | Add a todo to an owned list | `201 Created` |
-| `PUT` | `/todo/todos/:id` | Bearer Token | Update title and/or `completed` on an owned todo | `200 OK` |
+| `PUT` | `/todo/todos/:id` | Bearer Token | Update title, `completed`, and/or `dueDate` on an owned todo | `200 OK` |
 | `DELETE` | `/todo/todos/:id` | Bearer Token | Delete an owned todo | `200 OK` |
 
 **Todo object:**
@@ -110,11 +110,16 @@ API mount path is `/todo` (see `backend/server.js`).
   "listId": 1,
   "title": "Buy milk",
   "completed": false,
+  "dueDate": "2026-07-15",
   "userId": 42,
   "createdAt": "2026-07-02T12:05:00.000Z",
   "updatedAt": "2026-07-02T12:05:00.000Z"
 }
 ```
+
+- **Create body:** `{ "title": "Buy milk", "dueDate": "2026-07-15" }`. `dueDate` is optional (`YYYY-MM-DD` or omitted/`null`).
+- Invalid `dueDate` returns `400` `{ "message": "Due date must be a valid date in YYYY-MM-DD format." }`.
+- On `PUT`, omitted `dueDate` is unchanged; `null` clears it.
 
 - **Create body:** `{ "title": "Buy milk" }`. Client `userId` / `listId` spoofing is ignored.
 - **New todos** default to `completed: false`. Title is trimmed; empty rejected (`"Todo title is required."`); max 255 characters.

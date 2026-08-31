@@ -33,3 +33,4 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | List CRUD, dashboard lists view, MenuBar | Feature 2 — Todo List Management |
 | Todos nested under lists, items dialogs | Feature 3 — Todo List Item Management |
 | Profile GET/PUT and MenuBar dropdown | Feature 4 — User Profile Management |
+| Optional todo due dates and overdue styling | Feature 5 — Todo Due Date |

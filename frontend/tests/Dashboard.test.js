@@ -226,7 +226,7 @@ describe("Feature 2 — Todo List Management", () => {
       await flushPromises();
 
       const fields = wrapper.findAllComponents({ name: "VTextField" });
-      await fields.at(fields.length - 1).setValue("Buy milk");
+      await fields.at(fields.length - 2).setValue("Buy milk");
       await flushPromises();
 
       clickByText(wrapper, "Add");
@@ -426,13 +426,13 @@ describe("Feature 2 — Todo List Management", () => {
       await flushPromises();
 
       const fields = wrapper.findAllComponents({ name: "VTextField" });
-      await fields.at(fields.length - 1).setValue("Buy oat milk");
+      await fields.at(fields.length - 2).setValue("Buy oat milk");
       await flushPromises();
 
       clickByText(wrapper, "Save");
       await flushPromises();
 
-      expect(updateSpy).toHaveBeenCalledWith(10, { title: "Buy oat milk" });
+      expect(updateSpy).toHaveBeenCalledWith(10, { title: "Buy oat milk", dueDate: null });
       expect(document.body.textContent).toContain("Buy oat milk");
       wrapper.unmount();
     });
@@ -467,6 +467,147 @@ describe("Feature 2 — Todo List Management", () => {
 
       expect(deleteSpy).toHaveBeenCalledWith(10);
       expect(document.body.textContent).toContain("No todos in this list yet.");
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-5.1 — Set a due date when creating a todo", () => {
+    it("User adds a todo with a due date", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({ data: [] })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, dueDate: "2026-07-15", listId: 1, userId: 1 }],
+        });
+      const createSpy = vi.spyOn(todoServices, "createTodo").mockResolvedValue({
+        data: { id: 10, title: "Buy milk", dueDate: "2026-07-15" },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, { attachTo: document.body });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+      clickByText(wrapper, "+ Add Item");
+      await flushPromises();
+
+      const fields = wrapper.findAllComponents({ name: "VTextField" });
+      await fields.at(fields.length - 2).setValue("Buy milk");
+      await fields.at(fields.length - 1).setValue("2026-07-15");
+      clickByText(wrapper, "Add");
+      await flushPromises();
+
+      expect(createSpy).toHaveBeenCalledWith(1, { title: "Buy milk", dueDate: "2026-07-15" });
+      expect(document.body.textContent).toMatch(/Jul 15, 2026|Jul 15/);
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-5.3 — Edit or clear a due date", () => {
+    it("User sets a due date when editing a todo", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, dueDate: null, listId: 1, userId: 1 }],
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, dueDate: "2026-07-20", listId: 1, userId: 1 }],
+        });
+      const updateSpy = vi.spyOn(todoServices, "updateTodo").mockResolvedValue({
+        data: { id: 10, dueDate: "2026-07-20" },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, { attachTo: document.body });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+      clickAria("Edit todo");
+      await flushPromises();
+
+      const fields = wrapper.findAllComponents({ name: "VTextField" });
+      await fields.at(fields.length - 1).setValue("2026-07-20");
+      clickByText(wrapper, "Save");
+      await flushPromises();
+
+      expect(updateSpy).toHaveBeenCalledWith(10, { title: "Buy milk", dueDate: "2026-07-20" });
+      wrapper.unmount();
+    });
+
+    it("User clears a due date when editing a todo", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, dueDate: "2026-07-20", listId: 1, userId: 1 }],
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, dueDate: null, listId: 1, userId: 1 }],
+        });
+      const updateSpy = vi.spyOn(todoServices, "updateTodo").mockResolvedValue({
+        data: { id: 10, dueDate: null },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, { attachTo: document.body });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+      clickAria("Edit todo");
+      await flushPromises();
+
+      const fields = wrapper.findAllComponents({ name: "VTextField" });
+      await fields.at(fields.length - 1).setValue("");
+      clickByText(wrapper, "Save");
+      await flushPromises();
+
+      expect(updateSpy).toHaveBeenCalledWith(10, { title: "Buy milk", dueDate: null });
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-5.4 — Spot overdue todos", () => {
+    it("Incomplete todo past due date is styled as overdue", async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const dueDate = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll").mockResolvedValue({
+        data: [{ id: 10, title: "Buy milk", completed: false, dueDate, listId: 1, userId: 1 }],
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, { attachTo: document.body });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+
+      expect(document.body.querySelector(".text-error")).not.toBeNull();
+      wrapper.unmount();
+    });
+
+    it("Completed todo past due date is not styled as overdue", async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const dueDate = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll").mockResolvedValue({
+        data: [{ id: 10, title: "Buy milk", completed: true, dueDate, listId: 1, userId: 1 }],
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, { attachTo: document.body });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+
+      expect(document.body.querySelector(".text-error")).toBeNull();
       wrapper.unmount();
     });
   });

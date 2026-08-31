@@ -1,6 +1,6 @@
 # Data Model Reference
 
-**Status:** Updated for Feature 3 (Todo List Item Management).
+**Status:** Updated for Feature 5 (Todo Due Date).
 
 ## Tables
 
@@ -52,6 +52,7 @@ Task items belonging to one list and one user.
 | `listId` | INTEGER | No | — | Foreign Key referencing `lists.id`; cascade delete |
 | `title` | STRING(255) | No | — | Trimmed title |
 | `completed` | BOOLEAN | No | `false` | Completion state |
+| `dueDate` | DATEONLY | Yes | `null` | Optional calendar due date (`YYYY-MM-DD`) |
 | `userId` | INTEGER | No | — | Foreign Key referencing `users.id`; set from `req.user.id` |
 | `createdAt` | DATE | No | Sequelize | Timestamp |
 | `updatedAt` | DATE | No | Sequelize | Timestamp |

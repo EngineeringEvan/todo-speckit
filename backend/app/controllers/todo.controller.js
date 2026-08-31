@@ -4,6 +4,7 @@ import {
   getAccessibleListOrNull,
   getAccessibleTodoOrNull,
 } from "../authorization/authorization.js";
+import { normalizeDueDateInput } from "../utils/dueDate.js";
 
 const MAX_TITLE_LENGTH = 255;
 
@@ -65,9 +66,15 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: titleError });
     }
 
+    const dueDateResult = normalizeDueDateInput(req.body?.dueDate);
+    if (dueDateResult.error) {
+      return res.status(400).send({ message: dueDateResult.error });
+    }
+
     const todo = await db.todo.create({
       title: req.body.title.trim(),
       completed: false,
+      dueDate: dueDateResult.omitted ? null : dueDateResult.value,
       listId: list.id,
       userId: req.user.id,
     });
@@ -101,6 +108,14 @@ exports.update = async (req, res) => {
 
     if (req.body.completed !== undefined) {
       todo.completed = !!req.body.completed;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "dueDate")) {
+      const dueDateResult = normalizeDueDateInput(req.body.dueDate);
+      if (dueDateResult.error) {
+        return res.status(400).send({ message: dueDateResult.error });
+      }
+      todo.dueDate = dueDateResult.value;
     }
 
     await todo.save();
