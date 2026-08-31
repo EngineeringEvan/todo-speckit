@@ -7,17 +7,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { flushPromises } from "@vue/test-utils";
 import Dashboard from "../src/views/Dashboard.vue";
 import listServices from "../src/services/listServices.js";
+import todoServices from "../src/services/todoServices.js";
 import { mountWithPlugins } from "./testUtils.js";
 
 function clickByText(wrapper, text) {
-  const match = wrapper.findAll("button").find((btn) => btn.text().includes(text));
+  const match = wrapper.findAll("button").find((btn) => btn.text().trim() === text);
   if (match) {
     return match.trigger("click");
   }
 
   const bodyButtons = [...document.body.querySelectorAll("button")];
-  const found = bodyButtons.find((btn) => btn.textContent.includes(text));
+  const found = bodyButtons.find((btn) => btn.textContent.trim() === text);
   found?.click();
+}
+
+function clickAria(label) {
+  const el = document.body.querySelector(`[aria-label="${label}"]`);
+  el?.click();
 }
 
 describe("Feature 2 — Todo List Management", () => {
@@ -190,6 +196,277 @@ describe("Feature 2 — Todo List Management", () => {
 
       expect(deleteSpy).toHaveBeenCalledWith(1);
       expect(document.body.textContent).toContain("No lists yet. Create your first list.");
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-3.1 — Add tasks to a list", () => {
+    it("User adds a todo to a list via dialog", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({ data: [] })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, listId: 1, userId: 1 }],
+        });
+      const createSpy = vi.spyOn(todoServices, "createTodo").mockResolvedValue({
+        data: { id: 10, title: "Buy milk", completed: false, listId: 1, userId: 1 },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+
+      clickByText(wrapper, "+ Add Item");
+      await flushPromises();
+
+      const fields = wrapper.findAllComponents({ name: "VTextField" });
+      await fields.at(fields.length - 1).setValue("Buy milk");
+      await flushPromises();
+
+      clickByText(wrapper, "Add");
+      await flushPromises();
+
+      expect(createSpy).toHaveBeenCalledWith(1, { title: "Buy milk" });
+      expect(document.body.textContent).toContain("Buy milk");
+      wrapper.unmount();
+    });
+
+    it("User adds a todo with an empty title", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll").mockResolvedValue({ data: [] });
+      const createSpy = vi.spyOn(todoServices, "createTodo");
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+      clickByText(wrapper, "+ Add Item");
+      await flushPromises();
+      clickByText(wrapper, "Add");
+      await flushPromises();
+
+      expect(document.body.textContent).toContain("Todo title is required.");
+      expect(createSpy).not.toHaveBeenCalled();
+      wrapper.unmount();
+    });
+
+    it("Add item is only available inside the items dialog", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard);
+      await flushPromises();
+
+      const addItemButtons = wrapper.findAll("button").filter((btn) =>
+        btn.text().includes("+ Add Item")
+      );
+      expect(addItemButtons.length).toBe(0);
+      expect(wrapper.text()).toContain("+ New List");
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-3.2 — View tasks in a list", () => {
+    it("List items dialog shows empty state", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 2, name: "Personal", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll").mockResolvedValue({ data: [] });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+
+      expect(document.body.textContent).toContain("No todos in this list yet.");
+      wrapper.unmount();
+    });
+
+    it("User opens items for different lists", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [
+          { id: 1, name: "Work", userId: 1 },
+          { id: 2, name: "Personal", userId: 1 },
+        ],
+      });
+      vi.spyOn(todoServices, "getAll").mockImplementation((listId) => {
+        if (listId === 2) {
+          return Promise.resolve({
+            data: [{ id: 3, title: "Call mom", completed: false, listId: 2, userId: 1 }],
+          });
+        }
+        return Promise.resolve({
+          data: [
+            { id: 1, title: "Email client", completed: false, listId: 1, userId: 1 },
+            { id: 2, title: "Write report", completed: false, listId: 1, userId: 1 },
+          ],
+        });
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+
+      const itemButtons = wrapper.findAll('[aria-label="Items"]');
+      await itemButtons[1].trigger("click");
+      await flushPromises();
+      expect(document.body.textContent).toContain("Call mom");
+      expect(document.body.textContent).not.toContain("Email client");
+
+      clickByText(wrapper, "Close");
+      await flushPromises();
+
+      await itemButtons[0].trigger("click");
+      await flushPromises();
+      expect(document.body.textContent).toContain("Email client");
+      expect(document.body.textContent).toContain("Write report");
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-3.3 — Complete tasks", () => {
+    it("User marks a todo as complete", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, listId: 1, userId: 1 }],
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: true, listId: 1, userId: 1 }],
+        });
+      const updateSpy = vi.spyOn(todoServices, "updateTodo").mockResolvedValue({
+        data: { id: 10, title: "Buy milk", completed: true },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+
+      clickAria("Toggle Buy milk");
+      await flushPromises();
+
+      expect(updateSpy).toHaveBeenCalledWith(10, { completed: true });
+      wrapper.unmount();
+    });
+
+    it("User marks a completed todo as incomplete", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: true, listId: 1, userId: 1 }],
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, listId: 1, userId: 1 }],
+        });
+      const updateSpy = vi.spyOn(todoServices, "updateTodo").mockResolvedValue({
+        data: { id: 10, title: "Buy milk", completed: false },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+
+      clickAria("Toggle Buy milk");
+      await flushPromises();
+
+      expect(updateSpy).toHaveBeenCalledWith(10, { completed: false });
+      wrapper.unmount();
+    });
+  });
+
+  describe("US-3.4 — Edit and remove tasks", () => {
+    it("User edits a todo title", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, listId: 1, userId: 1 }],
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy oat milk", completed: false, listId: 1, userId: 1 }],
+        });
+      const updateSpy = vi.spyOn(todoServices, "updateTodo").mockResolvedValue({
+        data: { id: 10, title: "Buy oat milk" },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+      clickAria("Edit todo");
+      await flushPromises();
+
+      const fields = wrapper.findAllComponents({ name: "VTextField" });
+      await fields.at(fields.length - 1).setValue("Buy oat milk");
+      await flushPromises();
+
+      clickByText(wrapper, "Save");
+      await flushPromises();
+
+      expect(updateSpy).toHaveBeenCalledWith(10, { title: "Buy oat milk" });
+      expect(document.body.textContent).toContain("Buy oat milk");
+      wrapper.unmount();
+    });
+
+    it("User deletes a todo", async () => {
+      vi.spyOn(listServices, "getAll").mockResolvedValue({
+        data: [{ id: 1, name: "Groceries", userId: 1 }],
+      });
+      vi.spyOn(todoServices, "getAll")
+        .mockResolvedValueOnce({
+          data: [{ id: 10, title: "Buy milk", completed: false, listId: 1, userId: 1 }],
+        })
+        .mockResolvedValueOnce({ data: [] });
+      const deleteSpy = vi.spyOn(todoServices, "deleteTodo").mockResolvedValue({
+        data: { message: "Todo deleted successfully." },
+      });
+
+      const { wrapper } = await mountWithPlugins(Dashboard, {
+        attachTo: document.body,
+      });
+      await flushPromises();
+      await wrapper.find('[aria-label="Items"]').trigger("click");
+      await flushPromises();
+      clickAria("Delete todo");
+      await flushPromises();
+
+      const deleteButtons = [...document.body.querySelectorAll("button")].filter((btn) =>
+        btn.textContent.trim() === "Delete"
+      );
+      deleteButtons[deleteButtons.length - 1].click();
+      await flushPromises();
+
+      expect(deleteSpy).toHaveBeenCalledWith(10);
+      expect(document.body.textContent).toContain("No todos in this list yet.");
       wrapper.unmount();
     });
   });

@@ -1,6 +1,6 @@
 # Data Model Reference
 
-**Status:** Updated for Feature 2 (Todo List Management).
+**Status:** Updated for Feature 3 (Todo List Item Management).
 
 ## Tables
 
@@ -42,6 +42,20 @@ Named todo lists owned by a single user.
 | `createdAt` | DATE | No | Sequelize | Timestamp |
 | `updatedAt` | DATE | No | Sequelize | Timestamp |
 
+### `todos`
+
+Task items belonging to one list and one user.
+
+| Column | Type | Nullable | Default | Description / Constraints |
+|--------|------|----------|---------|---------------------------|
+| `id` | INTEGER | No | Auto-increment | Primary Key |
+| `listId` | INTEGER | No | — | Foreign Key referencing `lists.id`; cascade delete |
+| `title` | STRING(255) | No | — | Trimmed title |
+| `completed` | BOOLEAN | No | `false` | Completion state |
+| `userId` | INTEGER | No | — | Foreign Key referencing `users.id`; set from `req.user.id` |
+| `createdAt` | DATE | No | Sequelize | Timestamp |
+| `updatedAt` | DATE | No | Sequelize | Timestamp |
+
 ## Associations
 
 - **User ↔ Session**:
@@ -50,3 +64,9 @@ Named todo lists owned by a single user.
 - **User ↔ List**:
   - `User.hasMany(List, { foreignKey: "userId", as: "lists", onDelete: "CASCADE" })`
   - `List.belongsTo(User, { foreignKey: "userId", as: "user" })`
+- **List ↔ Todo**:
+  - `List.hasMany(Todo, { foreignKey: "listId", as: "todos", onDelete: "CASCADE" })`
+  - `Todo.belongsTo(List, { foreignKey: "listId", as: "list" })`
+- **User ↔ Todo**:
+  - `User.hasMany(Todo, { foreignKey: "userId", as: "todos", onDelete: "CASCADE" })`
+  - `Todo.belongsTo(User, { foreignKey: "userId", as: "user" })`

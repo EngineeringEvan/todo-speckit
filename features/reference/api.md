@@ -1,6 +1,6 @@
 # API Reference
 
-**Status:** Updated for Feature 2 (Todo List Management).
+**Status:** Updated for Feature 3 (Todo List Item Management).
 
 API mount path is `/todo` (see `backend/server.js`).
 
@@ -93,6 +93,33 @@ API mount path is `/todo` (see `backend/server.js`).
 - **Validation:** trimmed name required; max 100 characters (`"List name must be 100 characters or fewer."`).
 - **Not owned / missing:** `404` `{ "message": "List with id=<id> not found." }`
 - **Unauthenticated:** `401`
+
+### Todos
+
+| Method | Endpoint | Auth | Purpose | Success Status |
+|--------|----------|------|---------|----------------|
+| `GET` | `/todo/lists/:listId/todos` | Bearer Token | Fetch todos in an owned list (incomplete first, then `createdAt` ascending) | `200 OK` |
+| `POST` | `/todo/lists/:listId/todos` | Bearer Token | Add a todo to an owned list | `201 Created` |
+| `PUT` | `/todo/todos/:id` | Bearer Token | Update title and/or `completed` on an owned todo | `200 OK` |
+| `DELETE` | `/todo/todos/:id` | Bearer Token | Delete an owned todo | `200 OK` |
+
+**Todo object:**
+```json
+{
+  "id": 10,
+  "listId": 1,
+  "title": "Buy milk",
+  "completed": false,
+  "userId": 42,
+  "createdAt": "2026-07-02T12:05:00.000Z",
+  "updatedAt": "2026-07-02T12:05:00.000Z"
+}
+```
+
+- **Create body:** `{ "title": "Buy milk" }`. Client `userId` / `listId` spoofing is ignored.
+- **New todos** default to `completed: false`. Title is trimmed; empty rejected (`"Todo title is required."`); max 255 characters.
+- Parent list or todo not owned: `404` (`List with id=<id> not found.` / `Todo with id=<id> not found.`).
+- Deleting a list cascades to its todos.
 
 ## Conventions
 

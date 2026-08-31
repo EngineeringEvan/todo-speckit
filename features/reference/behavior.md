@@ -40,6 +40,9 @@
 | `OWN-002` | List create ownership | New lists set `userId` from `req.user.id` only; body `userId` is ignored. | Feature 2 `FR-004` | `backend/app/controllers/list.controller.js` |
 | `LIST-001` | List name rules | Names are trimmed; empty rejected; max 100 characters. | Feature 2 `FR-005` | `backend/app/controllers/list.controller.js`, `frontend/src/views/Dashboard.vue` |
 | `LIST-002` | List sort | `GET /todo/lists` returns lists ordered by name ascending. | Feature 2 `FR-006` | `backend/app/controllers/list.controller.js` |
+| `OWN-003` | Todo scope | Todo reads/writes require owned parent list and `userId: req.user.id`. Cross-user access returns `404`. | Feature 3 `FR-003` | `backend/app/authorization/authorization.js`, `backend/app/controllers/todo.controller.js` |
+| `TODO-001` | Todo defaults and sort | New todos are incomplete; lists return incomplete first, then `createdAt` ascending. | Feature 3 `FR-007`, `FR-009` | `backend/app/controllers/todo.controller.js` |
+| `TODO-002` | List cascade | Deleting a list deletes its todos. | Feature 3 `FR-008` | `backend/app/models/index.js` |
 
 ## 5. UI & Routing Rules
 
@@ -50,3 +53,4 @@
 | `UI-003` | Error Alerts | Form and API errors are rendered in `<v-alert type="error">`. | Screen Reqs | `frontend/src/views/Login.vue`, `frontend/src/views/Register.vue`, `frontend/src/views/Dashboard.vue` |
 | `UI-004` | MenuBar | Signed-in chrome shows the user's name and **Sign out**; hidden on login and register. | Feature 2 Screen Reqs | `frontend/src/App.vue`, `frontend/src/components/MenuBar.vue` |
 | `UI-005` | Lists empty state | Zero lists shows **"No lists yet. Create your first list."** | Feature 2 `US-2.2` | `frontend/src/views/Dashboard.vue` |
+| `UI-006` | Todo items dialog | List rows have an **Items** action; todos are managed in nested dialogs. Empty list items show **"No todos in this list yet."** | Feature 3 Screen Reqs | `frontend/src/views/Dashboard.vue` |

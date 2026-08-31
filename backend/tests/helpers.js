@@ -7,6 +7,9 @@ export const syncTestDatabase = async () => {
 };
 
 export const resetTestDatabase = async () => {
+  if (db.todo) {
+    await db.todo.destroy({ where: {} });
+  }
   if (db.list) {
     await db.list.destroy({ where: {} });
   }

@@ -31,3 +31,4 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 |------|------------|
 | Users, sessions, auth API, list GET scope | Feature 1 — User Authentication & Session Management |
 | List CRUD, dashboard lists view, MenuBar | Feature 2 — Todo List Management |
+| Todos nested under lists, items dialogs | Feature 3 — Todo List Item Management |
